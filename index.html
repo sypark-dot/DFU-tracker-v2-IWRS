@@ -264,13 +264,8 @@ function getWeekLabel(key) {
   return `${(d.getMonth()+1)}/${d.getDate()}~${(end.getMonth()+1)}/${end.getDate()}`;
 }
 
-// 찾기
 function getStudyWeeks() {
-  // 가장 이른 시작일부터 현재까지 주 목록 생성
-  const starts = H.map(h => parseDate(h.firstEnroll)).filter(Boolean);
-  if (!starts.length) return [];
-  const earliest = new Date(Math.min(...starts.map(d=>d.getTime())));
-  const start = new Date(getWeekKey(earliest));
+  const start = new Date('2026-01-26');
   const end = new Date('2026-05-31');
   const weeks = [];
   const cur = new Date(start);
