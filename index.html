@@ -283,14 +283,15 @@ function renderPlan(){
 
   const results=H.map(h=>({h,...calc(h)}));
   document.getElementById('calc-body').innerHTML=results.map(r=>{
-    const tot = getTotal(r.h.code);
-    const pct=r.h.approved?Math.round(tot/r.h.target*100):null;
-    const live = isIwrsLive(r.h.code);
+  const tot = getTotal(r.h.code);
+  const pct = Math.round(tot / r.h.target * 100);
+  const live = isIwrsLive(r.h.code);
     const badge=!r.h.approved
       ?`<span class="badge b-gray">승인일 미입력</span>`
       :pct>=100?`<span class="badge b-green">완료</span>`
       :pct>=50?`<span class="badge b-amber">진행중</span>`
-      :`<span class="badge b-blue">등록중</span>`;
+      :tot>0?`<span class="badge b-blue">등록중</span>`
+      :`<span class="badge b-gray">대기중</span>`;
     return`<tr>
       <td><strong>${r.h.name}</strong>${live?`<span class="iwrs-tag">IWRS</span>`:''}</td>
       <td>${r.h.target}명</td>
