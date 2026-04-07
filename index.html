@@ -227,7 +227,8 @@ async function loadFromSheet(){
         H[idx].target       = row.target        ||100;
         H[idx].clinicPerWeek= row.clinicPerWeek ||1;
         H[idx].perVisit     = row.perVisit      ||1;
-        if(row.monthlyActual) Object.assign(actual[H[idx].code], row.monthlyActual);
+       if(row.monthlyActual) Object.assign(actual[H[idx].code], row.monthlyActual);
+if(row.weeklyActual) Object.assign(weeklyActual[H[idx].code], row.weeklyActual);
       });
       renderPlan();renderTrack();renderSummary();
       document.getElementById('sync-status').textContent='마지막 동기화: '+nowStr();
@@ -322,7 +323,7 @@ function renderWeekly() {
 async function saveToSheet(){
   setLoading(true);
   try{
-    const data = H.map(h=>({
+  const data = H.map(h=>({
       hospital:     h.code,
       approvedDate: h.approved,
       firstEnroll:  h.firstEnroll,
@@ -330,6 +331,7 @@ async function saveToSheet(){
       clinicPerWeek:h.clinicPerWeek,
       perVisit:     h.perVisit,
       monthlyActual:actual[h.code],
+      weeklyActual: weeklyActual[h.code],
     }));
     const res = await fetch(SCRIPT_URL, {method:'POST',body: JSON.stringify({action:'write', data})});
     const json = await res.json();
