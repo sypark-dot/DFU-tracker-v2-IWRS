@@ -285,9 +285,13 @@ function renderWeekly() {
   </tr>`;
 
   document.getElementById('weekly-body').innerHTML = H.map((h, hi) => {
-    const c = calc(h);
-    const weekTarget = c.perWeek;
+   const weekTarget = h.clinicPerWeek;
     const cells = weeks.map(w => {
+      const hospStart = parseDate(h.firstEnroll) || parseDate(h.approved);
+      const weekDate = new Date(w);
+      if (hospStart && weekDate < new Date(getWeekKey(hospStart))) {
+        return `<td style="background:#f9f9f9;text-align:center;color:#ddd;font-size:11px">—</td>`;
+      }
       const v = weeklyActual[h.code][w];
       const val = v === undefined || v === '' ? '' : parseInt(v)||0;
       let indicator = '';
