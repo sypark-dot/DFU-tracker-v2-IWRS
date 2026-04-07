@@ -333,7 +333,11 @@ async function saveToSheet(){
       monthlyActual:actual[h.code],
       weeklyActual: weeklyActual[h.code],
     }));
-    const res = await fetch(SCRIPT_URL, {method:'POST',body: JSON.stringify({action:'write', data})});
+  const res = await fetch(SCRIPT_URL, {
+  method:'POST',
+  headers:{'Content-Type':'text/plain'},
+  body: JSON.stringify({action:'write', data})
+});
     const json = await res.json();
     if(json.status==='ok'){
       document.getElementById('sync-status').textContent='마지막 저장: '+nowStr();
