@@ -88,16 +88,7 @@ hr{border:none;border-top:1px solid #e8e8e4;margin:1.25rem 0}
   <div class="tab" onclick="switchTab('summary')">전체 요약</div>
   
 </div>
-<div id="tab-weekly" class="panel">
-  <p class="sec">주별 실제 등록 수 입력 → 주 목표 대비 현황</p>
-  <div style="overflow-x:auto">
-  <table>
-  <thead id="weekly-head"></thead>
-  <tbody id="weekly-body"></tbody>
-  </table>
-  </div>
-  <p class="hint">* ▲ 빨강: 목표 미달 (보충 필요) &nbsp;|&nbsp; ✓ 초록: 목표 달성 &nbsp;|&nbsp; — 회색: 미입력</p>
-</div>
+
 <div id="tab-plan" class="panel active">
   <p class="sec">병원별 기본 정보 입력</p>
   <table>
@@ -131,7 +122,16 @@ hr{border:none;border-top:1px solid #e8e8e4;margin:1.25rem 0}
   </div>
   <p class="hint">* 초록색 숫자는 목표 달성한 경우입니다.</p>
 </div>
-
+<div id="tab-weekly" class="panel">
+  <p class="sec">주별 실제 등록 수 입력 → 주 목표 대비 현황</p>
+  <div style="overflow-x:auto">
+  <table>
+  <thead id="weekly-head"></thead>
+  <tbody id="weekly-body"></tbody>
+  </table>
+  </div>
+  <p class="hint">* ▲ 빨강: 목표 미달 (보충 필요) &nbsp;|&nbsp; ✓ 초록: 목표 달성 &nbsp;|&nbsp; — 회색: 미입력</p>
+</div>
 <div id="tab-summary" class="panel">
   <p class="sec">전체 요약</p>
   <div id="iwrs-notice" style="display:none;background:#EBF3FB;border:1px solid #BDD7EE;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#185FA5"></div>
