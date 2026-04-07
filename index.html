@@ -144,6 +144,8 @@ hr{border:none;border-top:1px solid #e8e8e4;margin:1.25rem 0}
 
 <script>
 const SCRIPT_URL = 'https://gentle-shape-4717.sypark.workers.dev';
+const WEEKLY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTZXx7Ra4u07HsZ9bptjYQVT598H-i1WgXn1AIB6WY08zjg2HXY06Y8rnoY2Jx3NeAKw/exec';
+const WEEKLY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTZXx7Ra4u07HsZ9bptjYQVT598H-i1WgXn1AIB6WY08zjg2HXY06Y8rnoY2Jx3NeAKw/exec';
 const IWRS_URL   = 'https://script.google.com/macros/s/AKfycbzMEenJiht-5U8tYaE4I79CWCZmQCRHsV7YQMTk0DTsDS-hru4wHdkcBDx66niziVJJ/exec';
 
 const H = [
@@ -232,6 +234,14 @@ if(row.weeklyActual) Object.assign(weeklyActual[H[idx].code], row.weeklyActual);
       });
       renderPlan();renderTrack();renderSummary();
       document.getElementById('sync-status').textContent='마지막 동기화: '+nowStr();
+     try {
+  const wr = await fetch(WEEKLY_SCRIPT_URL);
+  const wj = await wr.json();
+  if(wj.status==='ok') wj.data.forEach(row=>{
+    const idx=H.findIndex(h=>h.code===row.hospital);
+    if(idx>=0 && row.weeklyActual) Object.assign(weeklyActual[H[idx].code], row.weeklyActual);
+  });
+} catch(e){}
       showToast('시트에서 불러왔어요 ✓');
     } else { showToast('불러오기 실패: '+json.error,'err'); }
   } catch(e){ showToast('연결 오류: '+e.message,'err'); }
@@ -341,6 +351,8 @@ async function saveToSheet(){
     const json = await res.json();
     if(json.status==='ok'){
       document.getElementById('sync-status').textContent='마지막 저장: '+nowStr();
+    const weeklyData = H.map(h=>({hospital:h.code, weeklyActual:weeklyActual[h.code]}));
+fetch(WEEKLY_SCRIPT_URL, {method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'write', data:weeklyData})});
       showToast('구글시트에 저장했어요 ✓');
     } else { showToast('저장 실패: '+json.error,'err'); }
   } catch(e){ showToast('연결 오류: '+e.message,'err'); }
