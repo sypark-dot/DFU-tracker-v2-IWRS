@@ -298,7 +298,13 @@ function renderPlan(){
       <td>${r.weeksNeeded?r.weeksNeeded+'주':'-'}</td>
       <td>${r.clinicDays?r.clinicDays+'일':'-'}</td>
       <td>${fmtDate(r.completionDate)}</td>
-      <td style="color:#888">${r.perClinicDay?r.perClinicDay+'명':'-'}</td>
+<td style="color:#888">${r.perClinicDay?r.perClinicDay+'명':'-'}</td>
+      <td>${tot}명${live?`<span class="iwrs-tag">IWRS</span>`:''}</td>
+      <td>${r.h.target-tot}명</td>
+      <td><div style="display:flex;align-items:center;gap:6px">
+        <div class="progress-wrap" style="flex:1;min-width:60px"><div class="progress-bar" style="width:${Math.min(pct,100)}%;background:${pct>=100?'#639922':pct>=50?'#BA7517':'#1F4E79'}"></div></div>
+        <span style="font-size:11px;color:#888;white-space:nowrap">${pct}%</span>
+      </div></td>
       <td>${badge}</td>
     </tr>`;
   }).join('');
@@ -311,7 +317,10 @@ function renderPlan(){
     <td><strong>전체</strong></td><td><strong>${tot}명</strong></td>
     <td><strong>${totPW}명/주</strong></td>
     <td><strong>${maxW?maxW+'주':'-'}</strong></td>
-    <td>-</td><td><strong>${fmtDate(latestDate)}</strong></td><td>-</td><td></td>`;
+    <td>-</td><td><strong>${fmtDate(latestDate)}</strong></td><td>-</td>
+    <td><strong>${H.reduce((s,h)=>s+getTotal(h.code),0)}명</strong></td>
+    <td><strong>${H.reduce((s,h)=>s+(h.target-getTotal(h.code)),0)}명</strong></td>
+    <td>-</td><td></td>`;
 }
 
 function renderTrack(){
