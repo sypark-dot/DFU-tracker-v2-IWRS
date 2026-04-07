@@ -356,6 +356,7 @@ function switchTab(t){
     document.getElementById('tab-'+n).classList.toggle('active',n===t);
   });
   if(t==='track')renderTrack();
+  if(t==='weekly')renderWeekly();
   if(t==='summary')renderSummary();
 }
 
