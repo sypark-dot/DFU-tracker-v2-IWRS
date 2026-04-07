@@ -84,9 +84,20 @@ hr{border:none;border-top:1px solid #e8e8e4;margin:1.25rem 0}
 <div class="tabs">
   <div class="tab active" onclick="switchTab('plan')">계획 설정</div>
   <div class="tab" onclick="switchTab('track')">월별 등록 추적</div>
+  <div class="tab" onclick="switchTab('weekly')">주별 등록 추적</div>
   <div class="tab" onclick="switchTab('summary')">전체 요약</div>
+  
 </div>
-
+<div id="tab-weekly" class="panel">
+  <p class="sec">주별 실제 등록 수 입력 → 주 목표 대비 현황</p>
+  <div style="overflow-x:auto">
+  <table>
+  <thead id="weekly-head"></thead>
+  <tbody id="weekly-body"></tbody>
+  </table>
+  </div>
+  <p class="hint">* ▲ 빨강: 목표 미달 (보충 필요) &nbsp;|&nbsp; ✓ 초록: 목표 달성 &nbsp;|&nbsp; — 회색: 미입력</p>
+</div>
 <div id="tab-plan" class="panel active">
   <p class="sec">병원별 기본 정보 입력</p>
   <table>
@@ -225,7 +236,85 @@ async function loadFromSheet(){
   } catch(e){ showToast('연결 오류: '+e.message,'err'); }
   setLoading(false);
 }
+// 주별 데이터 저장소
+const weeklyActual = {};
+H.forEach(h => { weeklyActual[h.code] = {}; });
 
+function getWeekKey(date) {
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - ((d.getDay()+6)%7)); // 월요일 기준
+  return d.toISOString().slice(0,10);
+}
+
+function getWeekLabel(key) {
+  const d = new Date(key);
+  const end = new Date(key);
+  end.setDate(end.getDate()+6);
+  return `${(d.getMonth()+1)}/${d.getDate()}~${(end.getMonth()+1)}/${end.getDate()}`;
+}
+
+function getStudyWeeks() {
+  // 가장 이른 시작일부터 현재까지 주 목록 생성
+  const starts = H.map(h => parseDate(h.firstEnroll)||parseDate(h.approved)).filter(Boolean);
+  if (!starts.length) return [];
+  const earliest = new Date(Math.min(...starts.map(d=>d.getTime())));
+  const start = new Date(getWeekKey(earliest));
+  const now = new Date(getWeekKey(new Date()));
+  const weeks = [];
+  const cur = new Date(start);
+  while (cur <= now) {
+    weeks.push(getWeekKey(cur));
+    cur.setDate(cur.getDate()+7);
+  }
+  return weeks;
+}
+
+function renderWeekly() {
+  const weeks = getStudyWeeks();
+  if (!weeks.length) {
+    document.getElementById('weekly-head').innerHTML = '';
+    document.getElementById('weekly-body').innerHTML = '<tr><td colspan="99" style="color:#aaa;text-align:center;padding:20px">첫 등록일 또는 승인일을 먼저 입력해주세요</td></tr>';
+    return;
+  }
+
+  document.getElementById('weekly-head').innerHTML = `<tr>
+    <th>병원</th>
+    ${weeks.map(w=>`<th style="text-align:center;white-space:nowrap">${getWeekLabel(w)}</th>`).join('')}
+    <th>합계</th>
+  </tr>`;
+
+  document.getElementById('weekly-body').innerHTML = H.map((h, hi) => {
+    const c = calc(h);
+    const weekTarget = c.perWeek;
+    const cells = weeks.map(w => {
+      const v = weeklyActual[h.code][w];
+      const val = v === undefined || v === '' ? '' : parseInt(v)||0;
+      let indicator = '';
+      if (val !== '') {
+        if (val >= weekTarget) {
+          indicator = `<div style="font-size:11px;color:#3B6D11;font-weight:500">✓ +${val-weekTarget}</div>`;
+        } else {
+          indicator = `<div style="font-size:11px;color:#A32D2D;font-weight:500">▲ -${weekTarget-val}</div>`;
+        }
+      } else {
+        indicator = `<div style="font-size:11px;color:#bbb">—</div>`;
+      }
+      return `<td style="text-align:center;padding:6px 8px">
+        <input type="number" min="0" max="99" value="${val}" style="width:44px;text-align:center;display:block;margin:0 auto 3px"
+          onchange="weeklyActual['${h.code}']['${w}']=this.value;renderWeekly()">
+        ${indicator}
+        <div style="font-size:10px;color:#bbb">목표 ${weekTarget}</div>
+      </td>`;
+    }).join('');
+    const tot = weeks.reduce((s,w)=>s+(parseInt(weeklyActual[h.code][w])||0),0);
+    return `<tr>
+      <td><div class="hosp-name">${h.name}</div><div class="hosp-code">${h.code}</div></td>
+      ${cells}
+      <td><strong>${tot}</strong></td>
+    </tr>`;
+  }).join('');
+}
 async function saveToSheet(){
   setLoading(true);
   try{
@@ -262,7 +351,7 @@ function calc(h){
 function getActualTotal(code){return MONTHS.reduce((s,m)=>s+(parseInt(actual[code][m])||0),0);}
 
 function switchTab(t){
-  ['plan','track','summary'].forEach((n,i)=>{
+  ['plan','track','weekly','summary'].forEach((n,i)=>{
     document.querySelectorAll('.tab')[i].classList.toggle('active',n===t);
     document.getElementById('tab-'+n).classList.toggle('active',n===t);
   });
