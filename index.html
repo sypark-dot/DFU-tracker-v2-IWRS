@@ -86,7 +86,6 @@ hr{border:none;border-top:1px solid #e8e8e4;margin:1.25rem 0}
   <div class="tab" onclick="switchTab('track')">월별 등록 추적</div>
   <div class="tab" onclick="switchTab('weekly')">주별 등록 추적</div>
   <div class="tab" onclick="switchTab('summary')">전체 요약</div>
-  
 </div>
 
 <div id="tab-plan" class="panel active">
@@ -122,6 +121,7 @@ hr{border:none;border-top:1px solid #e8e8e4;margin:1.25rem 0}
   </div>
   <p class="hint">* 초록색 숫자는 목표 달성한 경우입니다.</p>
 </div>
+
 <div id="tab-weekly" class="panel">
   <p class="sec">주별 실제 등록 수 입력 → 주 목표 대비 현황</p>
   <div style="overflow-x:auto">
@@ -132,6 +132,7 @@ hr{border:none;border-top:1px solid #e8e8e4;margin:1.25rem 0}
   </div>
   <p class="hint">* ▲ 빨강: 목표 미달 (보충 필요) &nbsp;|&nbsp; ✓ 초록: 목표 달성 &nbsp;|&nbsp; — 회색: 미입력</p>
 </div>
+
 <div id="tab-summary" class="panel">
   <p class="sec">전체 요약</p>
   <div id="iwrs-notice" style="display:none;background:#EBF3FB;border:1px solid #BDD7EE;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#185FA5"></div>
@@ -145,12 +146,12 @@ hr{border:none;border-top:1px solid #e8e8e4;margin:1.25rem 0}
 <script>
 const SCRIPT_URL = 'https://gentle-shape-4717.sypark.workers.dev';
 const WEEKLY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTZXx7Ra4u07HsZ9bptjYQVT598H-i1WgXn1AIB6WY08zjg2HXY06Y8rnoY2Jx3NeAKw/exec';
-const IWRS_URL   = 'https://script.google.com/macros/s/AKfycbzMEenJiht-5U8tYaE4I79CWCZmQCRHsV7YQMTk0DTsDS-hru4wHdkcBDx66niziVJJ/exec';
+const IWRS_URL = 'https://script.google.com/macros/s/AKfycbzMEenJiht-5U8tYaE4I79CWCZmQCRHsV7YQMTk0DTsDS-hru4wHdkcBDx66niziVJJ/exec';
 
 const H = [
-{code:'EWH',name:'이대목동',  approved:'2026-03-17',firstEnroll:'2026-03-25',target:100,clinicPerWeek:1,perVisit:1,weeklyTarget:8},
-{code:'SCH',name:'순천향서울',approved:'',           firstEnroll:'2026-04-14',target:100,clinicPerWeek:1,perVisit:1,weeklyTarget:10},
-{code:'IJH',name:'인제일산',  approved:'2026-01-26',firstEnroll:'2026-01-30',target:100,clinicPerWeek:1,perVisit:1,weeklyTarget:5},
+  {code:'EWH',name:'이대목동',  approved:'2026-03-17',firstEnroll:'2026-03-25',target:100,clinicPerWeek:1,perVisit:1,weeklyTarget:8},
+  {code:'SCH',name:'순천향서울',approved:'',           firstEnroll:'2026-04-14',target:100,clinicPerWeek:1,perVisit:1,weeklyTarget:10},
+  {code:'IJH',name:'인제일산',  approved:'2026-01-26',firstEnroll:'2026-01-30',target:100,clinicPerWeek:1,perVisit:1,weeklyTarget:5},
 ];
 
 const MONTHS=['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06',
@@ -161,9 +162,11 @@ const MLABELS=['26.01','26.02','26.03','26.04','26.05','26.06',
 const actual={};
 H.forEach(h=>{actual[h.code]={};MONTHS.forEach(m=>actual[h.code][m]='');});
 
-// IWRS 실시간 데이터 (단순오류 제외한 누적 합계)
-let iwrsCounts = null; // null = 아직 불러오지 않음
-let iwrsLoadedAt = null;
+const weeklyActual={};
+H.forEach(h=>{weeklyActual[h.code]={};});
+
+let iwrsCounts=null;
+let iwrsLoadedAt=null;
 
 function fmtDate(d){if(!d)return'-';return new Date(d).toLocaleDateString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit'});}
 function parseDate(s){if(!s)return null;const d=new Date(s);return isNaN(d)?null:d;}
@@ -178,186 +181,76 @@ function setLoading(v){document.getElementById('loading').style.display=v?'flex'
 
 // ── IWRS 불러오기 ──────────────────────────────────────
 async function loadFromIWRS(){
-  const badge = document.getElementById('iwrs-badge');
-  badge.textContent = 'IWRS 연결 중...';
-  badge.className = 'iwrs-badge';
-  try {
-    const res = await fetch(IWRS_URL);
-    const json = await res.json();
+  const badge=document.getElementById('iwrs-badge');
+  badge.textContent='IWRS 연결 중...';
+  badge.className='iwrs-badge';
+  try{
+    const res=await fetch(IWRS_URL);
+    const json=await res.json();
     if(json.success){
-      iwrsCounts = json.counts || {};
-      iwrsLoadedAt = nowStr();
-      const total = Object.values(iwrsCounts).reduce((a,b)=>a+b,0);
-      badge.textContent = `IWRS ✓ 총 ${total}명`;
-      badge.className = 'iwrs-badge ok';
+      iwrsCounts=json.counts||{};
+      iwrsLoadedAt=nowStr();
+      const total=Object.values(iwrsCounts).reduce((a,b)=>a+b,0);
+      badge.textContent=`IWRS ✓ 총 ${total}명`;
+      badge.className='iwrs-badge ok';
       showToast(`IWRS 연결됨 — 총 ${total}명 ✓`);
-      if(document.getElementById('tab-summary').classList.contains('active')) renderSummary();
+      if(document.getElementById('tab-summary').classList.contains('active'))renderSummary();
       renderPlan();
-    } else {
-      throw new Error(json.error||'API 오류');
-    }
-  } catch(e){
-    iwrsCounts = null;
-    badge.textContent = 'IWRS 연결 실패';
-    badge.className = 'iwrs-badge err';
-    showToast('IWRS 연결 실패: '+e.message, 'err');
+    }else{throw new Error(json.error||'API 오류');}
+  }catch(e){
+    iwrsCounts=null;
+    badge.textContent='IWRS 연결 실패';
+    badge.className='iwrs-badge err';
+    showToast('IWRS 연결 실패: '+e.message,'err');
   }
 }
 
-// IWRS 값이 있으면 IWRS 사용, 없으면 수동 입력 합계 사용
 function getTotal(code){
-  if(iwrsCounts && iwrsCounts[code] !== undefined) return iwrsCounts[code];
+  if(iwrsCounts&&iwrsCounts[code]!==undefined)return iwrsCounts[code];
   return MONTHS.reduce((s,m)=>s+(parseInt(actual[code][m])||0),0);
 }
 function isIwrsLive(code){
-  return iwrsCounts && iwrsCounts[code] !== undefined;
+  return iwrsCounts!==null;
 }
 
 // ── 시트 불러오기/저장 ─────────────────────────────────
 async function loadFromSheet(){
   setLoading(true);
   try{
-    const res = await fetch(SCRIPT_URL+'?action=read');
-    const json = await res.json();
+    const res=await fetch(SCRIPT_URL+'?action=read');
+    const json=await res.json();
     if(json.status==='ok'){
       json.data.forEach(row=>{
         const idx=H.findIndex(h=>h.code===row.hospital);
         if(idx<0)return;
-        H[idx].approved     = row.approvedDate  ||'';
-        H[idx].firstEnroll  = row.firstEnroll   ||'';
-        H[idx].target       = row.target        ||100;
-        H[idx].clinicPerWeek= row.clinicPerWeek ||1;
-        H[idx].perVisit     = row.perVisit      ||1;
-       if(row.monthlyActual) Object.assign(actual[H[idx].code], row.monthlyActual);
-if(row.weeklyActual) Object.assign(weeklyActual[H[idx].code], row.weeklyActual);
+        H[idx].approved     =row.approvedDate||'';
+        H[idx].firstEnroll  =row.firstEnroll||'';
+        H[idx].target       =row.target||100;
+        H[idx].clinicPerWeek=row.clinicPerWeek||1;
+        H[idx].perVisit     =row.perVisit||1;
+        if(row.monthlyActual)Object.assign(actual[H[idx].code],row.monthlyActual);
       });
+      // 주별 데이터 별도 불러오기
+      try{
+        const wr=await fetch(WEEKLY_SCRIPT_URL);
+        const wj=await wr.json();
+        if(wj.status==='ok')wj.data.forEach(row=>{
+          const idx=H.findIndex(h=>h.code===row.hospital);
+          if(idx>=0&&row.weeklyActual)Object.assign(weeklyActual[H[idx].code],row.weeklyActual);
+        });
+      }catch(e){}
       renderPlan();renderTrack();renderSummary();
       document.getElementById('sync-status').textContent='마지막 동기화: '+nowStr();
-     try {
-  const wr = await fetch(WEEKLY_SCRIPT_URL);
-  const wj = await wr.json();
-  if(wj.status==='ok') wj.data.forEach(row=>{
-    const idx=H.findIndex(h=>h.code===row.hospital);
-    if(idx>=0 && row.weeklyActual) Object.assign(weeklyActual[H[idx].code], row.weeklyActual);
-  });
-} catch(e){}
       showToast('시트에서 불러왔어요 ✓');
-    } else { showToast('불러오기 실패: '+json.error,'err'); }
-  } catch(e){ showToast('연결 오류: '+e.message,'err'); }
+    }else{showToast('불러오기 실패: '+json.error,'err');}
+  }catch(e){showToast('연결 오류: '+e.message,'err');}
   setLoading(false);
 }
-// 주별 데이터 저장소
-const weeklyActual = {};
-H.forEach(h => { weeklyActual[h.code] = {}; });
 
-function getWeekKey(date) {
-  const d = new Date(date);
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - ((d.getDay()+6)%7)); // 월요일 기준
-  return d.toISOString().slice(0,10);
-}
-
-function getWeekLabel(key) {
-  const d = new Date(key);
-  const end = new Date(key);
-  end.setDate(end.getDate()+6);
-  return `${(d.getMonth()+1)}/${d.getDate()}~${(end.getMonth()+1)}/${end.getDate()}`;
-}
-
-function getStudyWeeks() {
-  const start = new Date('2026-01-26');
-  const end = new Date('2026-05-31');
-  const weeks = [];
-  const cur = new Date(start);
-  while (cur <= end) {
-    weeks.push(getWeekKey(cur));
-    cur.setDate(cur.getDate()+7);
-  }
-  return weeks;
-}
-
-// 바꾸기
-function getStudyWeeks() {
-  const start = new Date('2026-01-26'); // IJH 첫 등록일(1/30) 기준 그 주 월요일
-  const end = new Date('2026-05-31');
-  const weeks = [];
-  const cur = new Date(start);
-  while (cur <= end) {
-    weeks.push(getWeekKey(cur));
-    cur.setDate(cur.getDate()+7);
-  }
-  return weeks;
-}
-// 해당 주의 월요일 직접 계산
-const startDay = new Date(earliest);
-const dow = startDay.getDay(); // 0=일, 1=월...
-const diff = dow === 0 ? -6 : 1 - dow; // 월요일로 맞추기
-startDay.setDate(startDay.getDate() + diff);
-startDay.setHours(0,0,0,0);
-const start = startDay;
-  const end = new Date('2026-05-31');
-  const weeks = [];
-  const cur = new Date(start);
-  while (cur <= end) {
-    weeks.push(getWeekKey(cur));
-    cur.setDate(cur.getDate()+7);
-  }
-  return weeks;
-}
-
-function renderWeekly() {
-  const weeks = getStudyWeeks();
-  if (!weeks.length) {
-    document.getElementById('weekly-head').innerHTML = '';
-    document.getElementById('weekly-body').innerHTML = '<tr><td colspan="99" style="color:#aaa;text-align:center;padding:20px">첫 등록일 또는 승인일을 먼저 입력해주세요</td></tr>';
-    return;
-  }
-
-  document.getElementById('weekly-head').innerHTML = `<tr>
-    <th>병원</th>
-    ${weeks.map(w=>`<th style="text-align:center;white-space:nowrap">${getWeekLabel(w)}</th>`).join('')}
-    <th>합계</th>
-  </tr>`;
-
-  document.getElementById('weekly-body').innerHTML = H.map((h, hi) => {
- const weekTarget = h.weeklyTarget || h.clinicPerWeek;
-    const cells = weeks.map(w => {
-      const hospStart = parseDate(h.firstEnroll) || parseDate(h.approved);
-      const weekDate = new Date(w);
-      if (hospStart && weekDate < new Date(getWeekKey(hospStart))) {
-        return `<td style="background:#f9f9f9;text-align:center;color:#ddd;font-size:11px">—</td>`;
-      }
-      const v = weeklyActual[h.code][w];
-      const val = v === undefined || v === '' ? '' : parseInt(v)||0;
-      let indicator = '';
-      if (val !== '') {
-        if (val >= weekTarget) {
-          indicator = `<div style="font-size:11px;color:#3B6D11;font-weight:500">✓ +${val-weekTarget}</div>`;
-        } else {
-          indicator = `<div style="font-size:11px;color:#A32D2D;font-weight:500">▲ -${weekTarget-val}</div>`;
-        }
-      } else {
-        indicator = `<div style="font-size:11px;color:#bbb">—</div>`;
-      }
-      return `<td style="text-align:center;padding:6px 8px">
-        <input type="number" min="0" max="99" value="${val}" style="width:44px;text-align:center;display:block;margin:0 auto 3px"
-          onchange="weeklyActual['${h.code}']['${w}']=this.value;renderWeekly()">
-        ${indicator}
-        <div style="font-size:10px;color:#bbb">목표 ${weekTarget}</div>
-      </td>`;
-    }).join('');
-    const tot = weeks.reduce((s,w)=>s+(parseInt(weeklyActual[h.code][w])||0),0);
-    return `<tr>
-      <td><div class="hosp-name">${h.name}</div><div class="hosp-code">${h.code}</div></td>
-      ${cells}
-      <td><strong>${tot}</strong></td>
-    </tr>`;
-  }).join('');
-}
 async function saveToSheet(){
   setLoading(true);
   try{
-  const data = H.map(h=>({
+    const data=H.map(h=>({
       hospital:     h.code,
       approvedDate: h.approved,
       firstEnroll:  h.firstEnroll,
@@ -365,22 +258,44 @@ async function saveToSheet(){
       clinicPerWeek:h.clinicPerWeek,
       perVisit:     h.perVisit,
       monthlyActual:actual[h.code],
-      weeklyActual: weeklyActual[h.code],
     }));
-  const res = await fetch(SCRIPT_URL, {
-  method:'POST',
-  headers:{'Content-Type':'text/plain'},
-  body: JSON.stringify({action:'write', data})
-});
-    const json = await res.json();
+    const res=await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'write',data})});
+    const json=await res.json();
     if(json.status==='ok'){
+      // 주별 데이터 별도 저장
+      const weeklyData=H.map(h=>({hospital:h.code,weeklyActual:weeklyActual[h.code]}));
+      fetch(WEEKLY_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'write',data:weeklyData})});
       document.getElementById('sync-status').textContent='마지막 저장: '+nowStr();
-    const weeklyData = H.map(h=>({hospital:h.code, weeklyActual:weeklyActual[h.code]}));
-fetch(WEEKLY_SCRIPT_URL, {method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'write', data:weeklyData})});
       showToast('구글시트에 저장했어요 ✓');
-    } else { showToast('저장 실패: '+json.error,'err'); }
-  } catch(e){ showToast('연결 오류: '+e.message,'err'); }
+    }else{showToast('저장 실패: '+json.error,'err');}
+  }catch(e){showToast('연결 오류: '+e.message,'err');}
   setLoading(false);
+}
+
+// ── 주별 유틸 ──────────────────────────────────────────
+function getWeekKey(date){
+  const d=new Date(date);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-((d.getDay()+6)%7));
+  return d.toISOString().slice(0,10);
+}
+function getWeekLabel(key){
+  const d=new Date(key);
+  const e=new Date(key);
+  e.setDate(e.getDate()+6);
+  return `${d.getMonth()+1}/${d.getDate()}~${e.getMonth()+1}/${e.getDate()}`;
+}
+function getStudyWeeks(){
+  // IJH 첫 등록일 1/30 기준 그 주 월요일 1/26부터 시작
+  const start=new Date('2026-01-26');
+  const end=new Date('2026-05-31');
+  const weeks=[];
+  const cur=new Date(start);
+  while(cur<=end){
+    weeks.push(getWeekKey(cur));
+    cur.setDate(cur.getDate()+7);
+  }
+  return weeks;
 }
 
 function calc(h){
@@ -393,7 +308,6 @@ function calc(h){
   const perClinicDay=clinicDays?(h.target/clinicDays).toFixed(1):null;
   return{perWeek,weeksNeeded,clinicDays,completionDate,perClinicDay};
 }
-
 function getActualTotal(code){return MONTHS.reduce((s,m)=>s+(parseInt(actual[code][m])||0),0);}
 
 function switchTab(t){
@@ -419,9 +333,9 @@ function renderPlan(){
 
   const results=H.map(h=>({h,...calc(h)}));
   document.getElementById('calc-body').innerHTML=results.map(r=>{
-  const tot = getTotal(r.h.code);
-  const pct = Math.round(tot / r.h.target * 100);
-  const live = isIwrsLive(r.h.code);
+    const tot=getTotal(r.h.code);
+    const pct=Math.round(tot/r.h.target*100);
+    const live=isIwrsLive(r.h.code);
     const badge=!r.h.approved
       ?`<span class="badge b-gray">승인일 미입력</span>`
       :pct>=100?`<span class="badge b-green">완료</span>`
@@ -435,7 +349,7 @@ function renderPlan(){
       <td>${r.weeksNeeded?r.weeksNeeded+'주':'-'}</td>
       <td>${r.clinicDays?r.clinicDays+'일':'-'}</td>
       <td>${fmtDate(r.completionDate)}</td>
-<td style="color:#888">${r.perClinicDay?r.perClinicDay+'명':'-'}</td>
+      <td style="color:#888">${r.perClinicDay?r.perClinicDay+'명':'-'}</td>
       <td>${tot}명${live?`<span class="iwrs-tag">IWRS</span>`:''}</td>
       <td>${r.h.target-tot}명</td>
       <td><div style="display:flex;align-items:center;gap:6px">
@@ -466,8 +380,7 @@ function renderTrack(){
     ${MLABELS.map(m=>`<th style="text-align:center">${m}<br><span style="font-weight:400;opacity:.7">실제&nbsp;/&nbsp;누적</span></th>`).join('')}
     <th>합계</th><th>목표</th><th>달성률</th>
   </tr>`;
-
-  document.getElementById('track-body').innerHTML=H.map((h,hi)=>{
+  document.getElementById('track-body').innerHTML=H.map((h)=>{
     let cumul=0;
     const cells=MONTHS.map((m)=>{
       const v=actual[h.code][m]===''?'':parseInt(actual[h.code][m])||0;
@@ -489,7 +402,6 @@ function renderTrack(){
       <td><span class="badge ${pb}">${pct}%</span></td>
     </tr>`;
   }).join('');
-
   let grandCumul=0;
   const footCells=MONTHS.map((m)=>{
     const mt=H.reduce((s,h)=>s+(parseInt(actual[h.code][m])||0),0);
@@ -505,43 +417,74 @@ function renderTrack(){
   </tr>`;
 }
 
+function renderWeekly(){
+  const weeks=getStudyWeeks();
+  document.getElementById('weekly-head').innerHTML=`<tr>
+    <th>병원</th>
+    ${weeks.map(w=>`<th style="text-align:center;white-space:nowrap">${getWeekLabel(w)}</th>`).join('')}
+    <th>합계</th>
+  </tr>`;
+  document.getElementById('weekly-body').innerHTML=H.map(h=>{
+    const weekTarget=h.weeklyTarget||h.clinicPerWeek;
+    const cells=weeks.map(w=>{
+      const hospStart=parseDate(h.firstEnroll)||parseDate(h.approved);
+      if(hospStart&&new Date(w)<new Date(getWeekKey(hospStart))){
+        return`<td style="background:#f9f9f9;text-align:center;color:#ccc;font-size:11px">—</td>`;
+      }
+      const v=weeklyActual[h.code][w];
+      const val=(v===undefined||v==='')?'':parseInt(v)||0;
+      let indicator='';
+      if(val!==''){
+        if(val>=weekTarget){
+          indicator=`<div style="font-size:11px;color:#3B6D11;font-weight:500">✓ +${val-weekTarget}</div>`;
+        }else{
+          indicator=`<div style="font-size:11px;color:#A32D2D;font-weight:500">▲ -${weekTarget-val}</div>`;
+        }
+      }else{
+        indicator=`<div style="font-size:11px;color:#bbb">—</div>`;
+      }
+      return`<td style="text-align:center;padding:6px 8px">
+        <input type="number" min="0" max="99" value="${val}" style="width:44px;text-align:center;display:block;margin:0 auto 3px"
+          onchange="weeklyActual['${h.code}']['${w}']=this.value;renderWeekly()">
+        ${indicator}
+        <div style="font-size:10px;color:#bbb">목표 ${weekTarget}</div>
+      </td>`;
+    }).join('');
+    const tot=weeks.reduce((s,w)=>s+(parseInt(weeklyActual[h.code][w])||0),0);
+    return`<tr>
+      <td><div class="hosp-name">${h.name}</div><div class="hosp-code">${h.code}</div></td>
+      ${cells}
+      <td><strong>${tot}</strong></td>
+    </tr>`;
+  }).join('');
+}
+
 function renderSummary(){
   const gTarget=H.reduce((s,h)=>s+h.target,0);
-  // IWRS가 있으면 IWRS 합계, 없으면 수동 합계
   const gActual=H.reduce((s,h)=>s+getTotal(h.code),0);
   const pct=Math.round(gActual/gTarget*100);
   const results=H.map(h=>({h,...calc(h)}));
   const latestDate=results.reduce((l,r)=>(!r.completionDate?l:(!l||r.completionDate>l)?r.completionDate:l),null);
-  const liveMode = iwrsCounts !== null;
-
-  // IWRS 안내 배너
-  const notice = document.getElementById('iwrs-notice');
+  const liveMode=iwrsCounts!==null;
+  const notice=document.getElementById('iwrs-notice');
   if(liveMode){
     notice.style.display='block';
-    notice.innerHTML=`⚡ IWRS 실시간 데이터 반영 중 — 단순오류(중복) 제외 기준 · 마지막 업데이트: ${iwrsLoadedAt}`;
-  } else {
-    notice.style.display='none';
-  }
-
+    notice.innerHTML=`⚡ IWRS 실시간 데이터 반영 중 — 오류(중복) 제외 기준 · 마지막 업데이트: ${iwrsLoadedAt}`;
+  }else{notice.style.display='none';}
   document.getElementById('metrics').innerHTML=`
     <div class="metric${liveMode?' iwrs-live':''}">
-      <div class="ml">전체 목표</div>
-      <div class="mv">${gTarget}명</div>
+      <div class="ml">전체 목표</div><div class="mv">${gTarget}명</div>
     </div>
     <div class="metric${liveMode?' iwrs-live':''}">
       <div class="ml">현재 등록${liveMode?' <span style="font-size:10px;color:#185FA5">(IWRS)</span>':''}</div>
-      <div class="mv">${gActual}명</div>
-      <div class="ms">${pct}% 달성</div>
+      <div class="mv">${gActual}명</div><div class="ms">${pct}% 달성</div>
     </div>
     <div class="metric">
-      <div class="ml">잔여 등록 필요</div>
-      <div class="mv">${gTarget-gActual}명</div>
+      <div class="ml">잔여 등록 필요</div><div class="mv">${gTarget-gActual}명</div>
     </div>
     <div class="metric">
-      <div class="ml">전체 완료 예상</div>
-      <div class="mv" style="font-size:15px">${fmtDate(latestDate)}</div>
+      <div class="ml">전체 완료 예상</div><div class="mv" style="font-size:15px">${fmtDate(latestDate)}</div>
     </div>`;
-
   document.getElementById('progress-section').innerHTML=H.map(h=>{
     const tot=getTotal(h.code);
     const live=isIwrsLive(h.code);
@@ -565,8 +508,6 @@ function renderSummary(){
 }
 
 renderPlan();
-loadFromSheet();
-// 페이지 로드 시 IWRS도 자동으로 불러오기
 loadFromIWRS();
 </script>
 </body>
