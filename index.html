@@ -217,58 +217,48 @@ function isIwrsLive(code){
 async function loadFromSheet(){
   setLoading(true);
   try{
-    const res=await fetch(SCRIPT_URL+'?action=read');
-    const json=await res.json();
+    const res  = await fetch(SCRIPT_URL+'?action=read');
+    const json = await res.json();
     if(json.status==='ok'){
       json.data.forEach(row=>{
-        const idx=H.findIndex(h=>h.code===row.hospital);
-        if(idx<0)return;
-        H[idx].approved     =row.approvedDate||'';
-        H[idx].firstEnroll  =row.firstEnroll||'';
-        H[idx].target       =row.target||100;
-        H[idx].clinicPerWeek=row.clinicPerWeek||1;
-        H[idx].perVisit     =row.perVisit||1;
-        if(row.monthlyActual)Object.assign(actual[H[idx].code],row.monthlyActual);
+        const idx = H.findIndex(h=>h.code===row.hospital);
+        if(idx<0) return;
+        H[idx].approved      = row.approvedDate  || '';
+        H[idx].firstEnroll   = row.firstEnroll   || '';
+        H[idx].target        = row.target        || 100;
+        H[idx].clinicPerWeek = row.clinicPerWeek || 1;
+        H[idx].perVisit      = row.perVisit      || 1;
+        if(row.monthlyActual) Object.assign(actual[H[idx].code],      row.monthlyActual);
+        if(row.weeklyActual)  Object.assign(weeklyActual[H[idx].code], row.weeklyActual);  // ← 추가
       });
-      // 주별 데이터 별도 불러오기
-      try{
-        const wr=await fetch(WEEKLY_SCRIPT_URL);
-        const wj=await wr.json();
-        if(wj.status==='ok')wj.data.forEach(row=>{
-          const idx=H.findIndex(h=>h.code===row.hospital);
-          if(idx>=0&&row.weeklyActual)Object.assign(weeklyActual[H[idx].code],row.weeklyActual);
-        });
-      }catch(e){}
-      renderPlan();renderTrack();renderSummary();
+      renderPlan(); renderTrack(); renderWeekly(); renderSummary();
       document.getElementById('sync-status').textContent='마지막 동기화: '+nowStr();
       showToast('시트에서 불러왔어요 ✓');
-    }else{showToast('불러오기 실패: '+json.error,'err');}
-  }catch(e){showToast('연결 오류: '+e.message,'err');}
+    } else { showToast('불러오기 실패: '+json.error,'err'); }
+  } catch(e){ showToast('연결 오류: '+e.message,'err'); }
   setLoading(false);
 }
 
 async function saveToSheet(){
   setLoading(true);
   try{
-    const data=H.map(h=>({
-      hospital:     h.code,
-      approvedDate: h.approved,
-      firstEnroll:  h.firstEnroll,
-      target:       h.target,
-      clinicPerWeek:h.clinicPerWeek,
-      perVisit:     h.perVisit,
-      monthlyActual:actual[h.code],
+    const data = H.map(h=>({
+      hospital:      h.code,
+      approvedDate:  h.approved,
+      firstEnroll:   h.firstEnroll,
+      target:        h.target,
+      clinicPerWeek: h.clinicPerWeek,
+      perVisit:      h.perVisit,
+      monthlyActual: actual[h.code],
+      weeklyActual:  weeklyActual[h.code],   // ← 추가
     }));
-    const res=await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'write',data})});
-    const json=await res.json();
+    const res  = await fetch(SCRIPT_URL, {method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'write', data})});
+    const json = await res.json();
     if(json.status==='ok'){
-      // 주별 데이터 별도 저장
-      const weeklyData=H.map(h=>({hospital:h.code,weeklyActual:weeklyActual[h.code]}));
-      fetch(WEEKLY_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'write',data:weeklyData})});
       document.getElementById('sync-status').textContent='마지막 저장: '+nowStr();
       showToast('구글시트에 저장했어요 ✓');
-    }else{showToast('저장 실패: '+json.error,'err');}
-  }catch(e){showToast('연결 오류: '+e.message,'err');}
+    } else { showToast('저장 실패: '+json.error,'err'); }
+  } catch(e){ showToast('연결 오류: '+e.message,'err'); }
   setLoading(false);
 }
 
