@@ -73,6 +73,7 @@ hr{border:none;border-top:1px solid #e8e8e4;margin:1.25rem 0}
     <button class="sync-btn iwrs" onclick="loadFromIWRS()">⚡ IWRS 불러오기</button>
     <span class="sync-status" id="sync-status">마지막 동기화: -</span>
     <button class="sync-btn" onclick="loadFromSheet()">↻ 시트에서 불러오기</button>
+    <button class="sync-btn" onclick="exportExcel()">⬇ 엑셀 저장</button>
     <button class="sync-btn" onclick="saveToSheet()">↑ 시트에 저장</button>
   </div>
 </div>
@@ -499,6 +500,51 @@ function renderSummary(){
 renderPlan();
 loadFromSheet();
 loadFromIWRS();
+
+function exportExcel(){
+  const rows = [];
+
+  // 월별 시트
+  const mHeader = ['병원', ...MLABELS];
+  rows.push(['[월별 등록 추적]']);
+  rows.push(mHeader);
+  H.forEach(h => {
+    rows.push([h.name, ...MONTHS.map(m => actual[h.code][m] || 0)]);
+  });
+
+  rows.push([]);
+
+  // 주별 시트
+  const allWeeks = [...new Set(H.flatMap(h => Object.keys(weeklyActual[h.code])))].sort();
+  rows.push(['[주별 등록 추적]']);
+  rows.push(['병원', ...allWeeks.map(w => getWeekLabel(w))]);
+  H.forEach(h => {
+    rows.push([h.name, ...allWeeks.map(w => weeklyActual[h.code][w] || 0)]);
+  });
+
+  rows.push([]);
+
+  // 계획 설정
+  rows.push(['[계획 설정]']);
+  rows.push(['병원', '심의승인일', '첫등록일', '목표', '외래횟수/주', '회당등록수', '현재등록', '달성률']);
+  H.forEach(h => {
+    const tot = getTotal(h.code);
+    const pct = Math.round(tot / h.target * 100);
+    rows.push([h.name, h.approved, h.firstEnroll, h.target, h.clinicPerWeek, h.perVisit, tot, pct+'%']);
+  });
+
+  // CSV 변환 후 다운로드
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csv], {type: 'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `DFU-DC_등록현황_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV 파일로 저장했어요 ✓');
+}
 </script>
 </body>
 </html>
