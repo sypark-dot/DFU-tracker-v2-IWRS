@@ -14,7 +14,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
 .sync-btn:hover{background:rgba(255,255,255,0.25)}
 .sync-btn.iwrs{background:rgba(100,200,100,0.25);border-color:rgba(100,220,100,0.5)}
 .sync-btn.iwrs:hover{background:rgba(100,200,100,0.4)}
-.sync-status{font-size:11px;opacity:.75}
+
 .iwrs-badge{font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2)}
 .iwrs-badge.ok{background:rgba(100,220,100,0.25);border-color:rgba(100,220,100,0.4)}
 .iwrs-badge.err{background:rgba(255,100,100,0.2);border-color:rgba(255,100,100,0.3)}
@@ -231,7 +231,7 @@ async function loadFromSheet(){
         if(row.weeklyActual)  Object.assign(weeklyActual[H[idx].code], row.weeklyActual);  // ← 추가
       });
       renderPlan(); renderTrack(); renderWeekly(); renderSummary();
-      document.getElementById('sync-status').textContent='마지막 동기화: '+nowStr();
+
       showToast('시트에서 불러왔어요 ✓');
     } else { showToast('불러오기 실패: '+json.error,'err'); }
   } catch(e){ showToast('연결 오류: '+e.message,'err'); }
@@ -254,7 +254,7 @@ async function saveToSheet(){
     const res  = await fetch(SCRIPT_URL, {method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'write', data})});
     const json = await res.json();
     if(json.status==='ok'){
-      document.getElementById('sync-status').textContent='마지막 저장: '+nowStr();
+
       showToast('구글시트에 저장했어요 ✓');
     } else { showToast('저장 실패: '+json.error,'err'); }
   } catch(e){ showToast('연결 오류: '+e.message,'err'); }
