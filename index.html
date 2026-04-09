@@ -531,7 +531,7 @@ function exportExcel(){
   H.forEach(h => {
     const tot = getTotal(h.code);
     const pct = Math.round(tot / h.target * 100);
-   rows.push([h.name, fmtCsv(h.approved), fmtCsv(h.firstEnroll), h.target, ...
+  rows.push([h.name, fmtCsv(h.approved), fmtCsv(h.firstEnroll), h.target, h.clinicPerWeek, h.perVisit, tot, pct+'%']);
   });
 
   // CSV 변환 후 다운로드
